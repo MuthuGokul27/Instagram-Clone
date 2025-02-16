@@ -1,8 +1,13 @@
 import { ID, Query } from "appwrite";
-import { INewUser } from "@/types";
-import { account, appwriteConfig, avatars, databases } from "./config";
-import { string } from "zod";
 
+import { appwriteConfig, account, databases, storage, avatars } from "./config";
+import { IUpdatePost, INewPost, INewUser, IUpdateUser } from "@/types";
+
+// ============================================================
+// AUTH
+// ============================================================
+
+// ============================== SIGN UP
 export async function createUserAccount(user: INewUser) {
   try {
     const newAccount = await account.create(
@@ -16,57 +21,72 @@ export async function createUserAccount(user: INewUser) {
 
     const avatarUrl = avatars.getInitials(user.name);
 
-    const newuser = await saveUserToDB({
+    const newUser = await saveUserToDB({
       accountId: newAccount.$id,
       name: newAccount.name,
       email: newAccount.email,
-      userName: user.username,
+      username: user.username,
       imageUrl: avatarUrl,
     });
 
-    return newuser;
+    return newUser;
   } catch (error) {
     console.log(error);
     return error;
   }
 }
 
-//This Function is Used to Create a User in Database
+// ============================== SAVE USER TO DB
 export async function saveUserToDB(user: {
   accountId: string;
   email: string;
   name: string;
   imageUrl: URL | string;
-  userName?: string;
+  username?: string;
 }) {
   try {
     const newUser = await databases.createDocument(
       appwriteConfig.databaseId,
-      appwriteConfig.postCollectionId,
+      appwriteConfig.userCollectionId,
       ID.unique(),
       user
     );
+
     return newUser;
   } catch (error) {
     console.log(error);
   }
 }
 
+// ============================== SIGN IN
 export async function signInAccount(user: { email: string; password: string }) {
   try {
     const session = await account.createEmailPasswordSession(
       user.email,
       user.password
     );
+
     return session;
   } catch (error) {
     console.log(error);
   }
 }
 
-export async function getCurrentUser() {
+// ============================== GET ACCOUNT
+export async function getAccount() {
   try {
     const currentAccount = await account.get();
+
+    return currentAccount;
+  } catch (error) {
+    console.log(error);
+  }
+}
+
+// ============================== GET USER
+export async function getCurrentUser() {
+  try {
+    const currentAccount = await getAccount();
 
     if (!currentAccount) throw Error;
 
@@ -76,10 +96,11 @@ export async function getCurrentUser() {
       [Query.equal("accountId", currentAccount.$id)]
     );
 
-    if (!currentAccount) throw Error;
+    if (!currentUser) throw Error;
 
     return currentUser.documents[0];
   } catch (error) {
     console.log(error);
+    return null;
   }
 }

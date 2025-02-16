@@ -1,6 +1,6 @@
 import { getCurrentUser } from "@/lib/Appwrite/api";
 import { IContextType, IUser } from "@/types";
-
+import { useNavigate } from "react-router-dom";
 import { createContext, useContext, useEffect, useState } from "react";
 
 export const INITIAL_USER = {
@@ -26,7 +26,7 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [user, setUser] = useState<IUser>(INITIAL_USER);
   const [isLoading, setIsLoading] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-
+  const navigate = useNavigate();
   const checkAuthUser = async () => {
     try {
       const currentAccount = await getCurrentUser();
@@ -54,6 +54,13 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
   };
 
+  useEffect(() => {
+    localStorage.getItem("cookieFallback") === null;
+    if (localStorage.getItem("cookieFallback") === "[]") navigate("/sign-in");
+
+    checkAuthUser();
+  }, []);
+
   const value = {
     user,
     setUser,
@@ -65,4 +72,6 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
 
-export default AuthContext;
+export default AuthProvider;
+
+export const useUserContext = () => useContext(AuthContext);
